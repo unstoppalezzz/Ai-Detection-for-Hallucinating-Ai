@@ -12,4 +12,4 @@ https://unstoppalezzz.github.io/Ai-Detection-for-Hallucinating-Ai/ai-detector.ht
 #### 2. Import key
 - Save your key somewhere safe
 - Go to the link above 
-- Paste you key in where it say gemini key
+- Paste you key in where it says gemini key
