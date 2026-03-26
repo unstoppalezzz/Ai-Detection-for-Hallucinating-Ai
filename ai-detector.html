@@ -123,6 +123,7 @@
 
   @media (max-width: 640px) {
     .inputs-grid { grid-template-columns: 1fr; }
+    .optional-grid { grid-template-columns: 1fr !important; }
   }
 
   .field {
@@ -137,6 +138,20 @@
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--text-dim);
+  }
+
+  .field-label .optional-tag {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    background: rgba(232, 255, 71, 0.1);
+    border: 1px solid rgba(232, 255, 71, 0.25);
+    border-radius: 4px;
+    padding: 1px 6px;
+    vertical-align: middle;
+    text-transform: uppercase;
   }
 
   textarea {
@@ -158,6 +173,101 @@
   textarea:focus { border-color: var(--accent); }
   textarea::placeholder { color: var(--text-dim); }
 
+  textarea.short {
+    height: 160px;
+  }
+
+  /* ── Optional section toggle ── */
+  .optional-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    cursor: pointer;
+    user-select: none;
+    width: fit-content;
+  }
+
+  .optional-toggle-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: var(--accent);
+    transition: background 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+  }
+
+  .optional-toggle:hover .optional-toggle-icon {
+    background: var(--surface2);
+    border-color: var(--accent);
+  }
+
+  .optional-toggle-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    transition: color 0.2s;
+  }
+
+  .optional-toggle:hover .optional-toggle-label {
+    color: var(--text);
+  }
+
+  .optional-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    background: rgba(232, 255, 71, 0.1);
+    border: 1px solid rgba(232, 255, 71, 0.25);
+    border-radius: 4px;
+    padding: 2px 7px;
+    text-transform: uppercase;
+  }
+
+  .optional-section {
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: 0;
+  }
+
+  .optional-section.open {
+    max-height: 600px;
+    opacity: 1;
+    margin-bottom: 20px;
+  }
+
+  .optional-inner {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+
+  .optional-desc {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+
+  .optional-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  /* ── Button ── */
   .analyze-btn {
     display: flex;
     align-items: center;
@@ -390,7 +500,30 @@
     color: var(--text);
     font-weight: 400;
   }
+
+  /* exemplar note in results */
+  .exemplar-note {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  .exemplar-note.visible { display: flex; }
+
+  .exemplar-note-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
 </style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 <div class="grain"></div>
@@ -399,7 +532,7 @@
     <div class="eyebrow">Hybrid Analysis Engine</div>
     <h1>AI<span>.</span>Detect</h1>
     <p class="subtitle">Analyze student responses against assignment prompts to identify AI-generated content and hallucinations.</p>
-    <p class="subtitle">This Ai can and will hallucinatate so check your students work before punishing them</p> 
+    <p class="subtitle">This AI can and will hallucinate so check your students' work before punishing them.</p>
   </header>
 
   <div class="api-bar">
@@ -418,6 +551,31 @@
     </div>
   </div>
 
+  <!-- Optional extras toggle -->
+  <div class="optional-toggle" onclick="toggleOptional()">
+    <div class="optional-toggle-icon" id="toggleIcon">+</div>
+    <div class="optional-toggle-label">Add optional context</div>
+    <div class="optional-badge">Improves accuracy</div>
+  </div>
+
+  <div class="optional-section" id="optionalSection">
+    <div class="optional-inner">
+      <p class="optional-desc">
+        Providing additional context or an exemplar human response helps the model calibrate its analysis more accurately — especially for unusual assignment styles or subject-specific writing conventions.
+      </p>
+      <div class="optional-grid">
+        <div class="field">
+          <div class="field-label">Extra Context / Notes <span class="optional-tag">Optional</span></div>
+          <textarea id="extraContext" class="short" placeholder="e.g. This is a Year 10 science class. The assignment was done under timed conditions. Students were not expected to cite sources. The topic covered was photosynthesis…"></textarea>
+        </div>
+        <div class="field">
+          <div class="field-label">Exemplar Human Response <span class="optional-tag">Optional</span></div>
+          <textarea id="exemplar" class="short" placeholder="Paste a genuine student response (not AI) as a benchmark for comparison. The model will use this to understand the expected voice, structure, and level of the class…"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <button class="analyze-btn" id="analyzeBtn" onclick="analyze()">
     <div class="spinner" id="spinner"></div>
     <span class="btn-text" id="btnText">Analyze Response</span>
@@ -427,6 +585,11 @@
 
   <div class="results" id="results">
     <div class="results-header">Analysis Results</div>
+
+    <div class="exemplar-note" id="exemplarNote">
+      <div class="exemplar-note-dot"></div>
+      Analysis was calibrated using an exemplar human response and/or extra context.
+    </div>
 
     <div class="likelihood-card">
       <div class="likelihood-num" id="likelihoodNum">—</div>
@@ -473,6 +636,21 @@
 <script>
 const API_KEY = "YOUR_API_KEY_HERE";
 
+let optionalOpen = false;
+
+function toggleOptional() {
+  optionalOpen = !optionalOpen;
+  const section = document.getElementById('optionalSection');
+  const icon = document.getElementById('toggleIcon');
+  if (optionalOpen) {
+    section.classList.add('open');
+    icon.textContent = '−';
+  } else {
+    section.classList.remove('open');
+    icon.textContent = '+';
+  }
+}
+
 function getColor(score) {
   if (score <= 40) return 'green';
   if (score <= 70) return 'yellow';
@@ -503,12 +681,14 @@ async function analyze() {
   const apiKey = document.getElementById('apiKey').value.trim() || API_KEY;
   const assignment = document.getElementById('prompt').value.trim();
   const student = document.getElementById('response').value.trim();
+  const extraContext = document.getElementById('extraContext').value.trim();
+  const exemplar = document.getElementById('exemplar').value.trim();
 
   const errorEl = document.getElementById('errorMsg');
   errorEl.style.display = 'none';
 
   if (!assignment || !student) {
-    errorEl.textContent = 'Both fields are required.';
+    errorEl.textContent = 'Both the assignment prompt and student response are required.';
     errorEl.style.display = 'block';
     return;
   }
@@ -528,7 +708,16 @@ async function analyze() {
   btnText.textContent = 'Analyzing…';
   document.getElementById('results').style.display = 'none';
 
+  let optionalBlocks = '';
+  if (extraContext) {
+    optionalBlocks += `\n\nEXTRA CONTEXT / TEACHER NOTES:\n${extraContext}`;
+  }
+  if (exemplar) {
+    optionalBlocks += `\n\nEXEMPLAR GENUINE HUMAN STUDENT RESPONSE (for calibration):\nThe following is a confirmed human-written student response for this same assignment. Use it as a benchmark to understand the expected writing level, voice, structure, and style of a real student in this class. Compare the submission against this exemplar when assessing naturalness and authenticity.\n${exemplar}`;
+  }
+
   const systemPrompt = `You are an expert AI detection and academic integrity analyst. Analyze the given student response against the assignment prompt.
+${extraContext || exemplar ? `\nYou have been provided with additional calibration information (see below). Use it to improve the accuracy of your analysis — adjust your expectations for writing level, voice, and style accordingly.` : ''}
 
 You must return ONLY a valid JSON object with no markdown, no code fences, no explanation outside the JSON. Return exactly this structure:
 {
@@ -541,9 +730,9 @@ You must return ONLY a valid JSON object with no markdown, no code fences, no ex
   "explanation": "<2-3 sentence summary of key findings and reasoning>"
 }
 
-Keep the explanation under 100 words. Evaluate: hallucinations or fabricated facts, alignment with assignment, generic vs specific writing, AI-like sentence structures, unusual uniformity in tone, lack of personal voice, suspiciously perfect grammar, over-hedging language, absence of errors a real student would make, and reliance on common AI phrasing patterns.`;
+Keep the explanation under 120 words. Evaluate: hallucinations or fabricated facts, alignment with assignment, generic vs specific writing, AI-like sentence structures, unusual uniformity in tone, lack of personal voice, suspiciously perfect grammar, over-hedging language, absence of errors a real student would make, reliance on common AI phrasing patterns${exemplar ? ', and how closely the submission matches the authenticity and naturalness of the provided exemplar human response' : ''}.`;
 
-  const userMessage = `ASSIGNMENT PROMPT:\n${assignment}\n\nSTUDENT RESPONSE:\n${student}`;
+  const userMessage = `ASSIGNMENT PROMPT:\n${assignment}\n\nSTUDENT RESPONSE:\n${student}${optionalBlocks}`;
 
   try {
     const res = await fetch(
@@ -571,7 +760,7 @@ Keep the explanation under 100 words. Evaluate: hallucinations or fabricated fac
     if (start === -1 || end === -1) throw new Error('No JSON object found in response.');
     const parsed = JSON.parse(cleaned.slice(start, end + 1));
 
-    renderResults(parsed);
+    renderResults(parsed, !!(extraContext || exemplar));
   } catch (e) {
     errorEl.textContent = 'Error: ' + (e.message || 'Something went wrong.');
     errorEl.style.display = 'block';
@@ -582,7 +771,7 @@ Keep the explanation under 100 words. Evaluate: hallucinations or fabricated fac
   }
 }
 
-function renderResults(d) {
+function renderResults(d, usedOptional) {
   const aiScore = d.ai_score ?? 0;
   const instrScore = d.instruction_following ?? 0;
   const genericScore = d.generic_score ?? 0;
@@ -627,6 +816,13 @@ function renderResults(d) {
   }
 
   document.getElementById('explanationText').textContent = d.explanation || 'No explanation provided.';
+
+  const exemplarNote = document.getElementById('exemplarNote');
+  if (usedOptional) {
+    exemplarNote.classList.add('visible');
+  } else {
+    exemplarNote.classList.remove('visible');
+  }
 
   const results = document.getElementById('results');
   results.style.display = 'block';
