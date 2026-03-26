@@ -501,6 +501,59 @@
     font-weight: 400;
   }
 
+  /* ── Em dash warning ── */
+  .emdash-warning {
+    display: none;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(255, 107, 53, 0.08);
+    border: 1px solid rgba(255, 107, 53, 0.35);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    animation: fadeUp 0.3s ease both;
+  }
+
+  .emdash-warning.visible { display: flex; }
+
+  .emdash-warning-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .emdash-warning-body {
+    flex: 1;
+  }
+
+  .emdash-warning-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+
+  .emdash-warning-text {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .emdash-warning-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--accent2);
+    background: rgba(255, 107, 53, 0.12);
+    border: 1px solid rgba(255, 107, 53, 0.25);
+    border-radius: 4px;
+    padding: 1px 7px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
   /* exemplar note in results */
   .exemplar-note {
     display: none;
@@ -548,6 +601,15 @@
     <div class="field">
       <div class="field-label">Student Response</div>
       <textarea id="response" placeholder="Paste the student's response here…"></textarea>
+    </div>
+  </div>
+
+  <!-- Em dash warning -->
+  <div class="emdash-warning" id="emdashWarning">
+    <div class="emdash-warning-icon">⚠</div>
+    <div class="emdash-warning-body">
+      <div class="emdash-warning-title">Em Dash Detected in Prompt <span class="emdash-warning-count" id="emdashCount"></span></div>
+      <div class="emdash-warning-text">The assignment prompt contains em dashes (—), which are a common hallmark of AI-generated text. If this prompt was written by a teacher or copied from a human source, em dashes are unusual. Consider whether the prompt itself may have been AI-generated — this could affect the baseline used for analysis.</div>
     </div>
   </div>
 
@@ -637,6 +699,24 @@
 const API_KEY = "YOUR_API_KEY_HERE";
 
 let optionalOpen = false;
+
+function checkEmDash() {
+  const promptText = document.getElementById('prompt').value;
+  const matches = promptText.match(/—/g);
+  const warning = document.getElementById('emdashWarning');
+  const countEl = document.getElementById('emdashCount');
+  if (matches && matches.length > 0) {
+    countEl.textContent = matches.length + (matches.length === 1 ? ' found' : ' found');
+    warning.classList.add('visible');
+  } else {
+    warning.classList.remove('visible');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('prompt').addEventListener('input', checkEmDash);
+});
+
 
 function toggleOptional() {
   optionalOpen = !optionalOpen;
@@ -730,7 +810,7 @@ You must return ONLY a valid JSON object with no markdown, no code fences, no ex
   "explanation": "<2-3 sentence summary of key findings and reasoning>"
 }
 
-Keep the explanation under 120 words. Evaluate: hallucinations or fabricated facts, alignment with assignment, generic vs specific writing, AI-like sentence structures, unusual uniformity in tone, lack of personal voice, suspiciously perfect grammar, over-hedging language, absence of errors a real student would make, reliance on common AI phrasing patterns${exemplar ? ', and how closely the submission matches the authenticity and naturalness of the provided exemplar human response' : ''}.`;
+Keep the explanation under 120 words. Evaluate: hallucinations or fabricated facts, alignment with assignment, generic vs specific writing, AI-like sentence structures, unusual uniformity in tone, lack of personal voice, suspiciously perfect grammar, over-hedging language, absence of errors a real student would make, reliance on common AI phrasing patterns, frequent use of em dashes (—) which are a strong stylistic marker of AI-generated text${exemplar ? ', and how closely the submission matches the authenticity and naturalness of the provided exemplar human response' : ''}.`;
 
   const userMessage = `ASSIGNMENT PROMPT:\n${assignment}\n\nSTUDENT RESPONSE:\n${student}${optionalBlocks}`;
 
