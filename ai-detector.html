@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Detection Analysis</title>
+<style>
+
+  :root {
+    --bg: #0d0d0f;
+    --surface: #131316;
+    --surface2: #1a1a1f;
+    --border: #2a2a33;
+    --accent: #e8ff47;
+    --accent2: #ff6b35;
+    --text: #f0f0f5;
+    --text-dim: #7a7a8c;
+    --green: #4ade80;
+    --yellow: #facc15;
+    --red: #f87171;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .grain {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-size: 128px;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  header {
+    margin-bottom: 56px;
+  }
+
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  h1 span {
+    color: var(--accent);
+  }
+
+  .subtitle {
+    margin-top: 16px;
+    color: var(--text-dim);
+    font-size: 15px;
+    font-weight: 400;
+    max-width: 480px;
+    line-height: 1.6;
+  }
+
+  .api-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+
+  .api-bar label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+
+  .api-bar input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+  }
+
+  .api-bar input::placeholder { color: var(--text-dim); }
+
+  .inputs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  @media (max-width: 640px) {
+    .inputs-grid { grid-template-columns: 1fr; }
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .field-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  textarea {
+    width: 100%;
+    height: 240px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    padding: 16px;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--text-dim); }
+
+  .analyze-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 18px;
+    background: var(--accent);
+    color: #0d0d0f;
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: transform 0.15s, opacity 0.15s;
+    margin-bottom: 40px;
+  }
+
+  .analyze-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .analyze-btn:active { transform: translateY(0); }
+  .analyze-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(13,13,15,0.3);
+    border-top-color: #0d0d0f;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .btn-text { transition: opacity 0.2s; }
+
+  .error-msg {
+    display: none;
+    background: rgba(248, 113, 113, 0.1);
+    border: 1px solid rgba(248, 113, 113, 0.3);
+    border-radius: var(--radius);
+    padding: 16px;
+    color: var(--red);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+
+  .results {
+    display: none;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .results-header {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+  }
+
+  .scores-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .score-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .score-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .score-card.green::before { background: var(--green); }
+  .score-card.yellow::before { background: var(--yellow); }
+  .score-card.red::before { background: var(--red); }
+
+  .score-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  .score-value {
+    font-size: 40px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  .score-value.green { color: var(--green); }
+  .score-value.yellow { color: var(--yellow); }
+  .score-value.red { color: var(--red); }
+
+  .score-value.badge {
+    font-size: 22px;
+    text-transform: capitalize;
+  }
+
+  .likelihood-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .likelihood-num {
+    font-size: 72px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .likelihood-info {}
+
+  .likelihood-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .likelihood-label {
+    font-size: 28px;
+    font-weight: 700;
+  }
+
+  .meter-bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 99px;
+    margin-top: 16px;
+    overflow: hidden;
+  }
+
+  .meter-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .flags-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .flags-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+  }
+
+  .flag-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  .flag-item:last-child { border-bottom: none; }
+
+  .flag-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent2);
+    flex-shrink: 0;
+    margin-top: 6px;
+  }
+
+  .explanation-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+
+  .explanation-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+  }
+
+  .explanation-text {
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text);
+    font-weight: 400;
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="container">
+  <header>
+    <div class="eyebrow">Hybrid Analysis Engine</div>
+    <h1>AI<span>.</span>Detect</h1>
+    <p class="subtitle">Analyze student responses against assignment prompts to identify AI-generated content and hallucinations.</p>
+  </header>
+
+  <div class="api-bar">
+    <label>GEMINI API KEY</label>
+    <input type="password" id="apiKey" placeholder="Paste your API key here…">
+  </div>
+
+  <div class="inputs-grid">
+    <div class="field">
+      <div class="field-label">Assignment Prompt</div>
+      <textarea id="prompt" placeholder="Paste the original assignment or question here…"></textarea>
+    </div>
+    <div class="field">
+      <div class="field-label">Student Response</div>
+      <textarea id="response" placeholder="Paste the student's response here…"></textarea>
+    </div>
+  </div>
+
+  <button class="analyze-btn" id="analyzeBtn" onclick="analyze()">
+    <div class="spinner" id="spinner"></div>
+    <span class="btn-text" id="btnText">Analyze Response</span>
+  </button>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <div class="results" id="results">
+    <div class="results-header">Analysis Results</div>
+
+    <div class="likelihood-card">
+      <div class="likelihood-num" id="likelihoodNum">—</div>
+      <div class="likelihood-info">
+        <div class="likelihood-title">AI Likelihood</div>
+        <div class="likelihood-label" id="likelihoodLabel">—</div>
+        <div class="meter-bar">
+          <div class="meter-fill" id="likelihoodMeter" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scores-grid">
+      <div class="score-card" id="card-ai">
+        <div class="score-label">AI Detection Score</div>
+        <div class="score-value" id="val-ai">—</div>
+      </div>
+      <div class="score-card" id="card-halluc">
+        <div class="score-label">Hallucination Risk</div>
+        <div class="score-value badge" id="val-halluc">—</div>
+      </div>
+      <div class="score-card" id="card-instr">
+        <div class="score-label">Instruction Following</div>
+        <div class="score-value" id="val-instr">—</div>
+      </div>
+      <div class="score-card" id="card-generic">
+        <div class="score-label">Generic Writing Score</div>
+        <div class="score-value" id="val-generic">—</div>
+      </div>
+    </div>
+
+    <div class="flags-section" id="flagsSection">
+      <div class="flags-title">Detected Issues</div>
+      <div id="flagsList"></div>
+    </div>
+
+    <div class="explanation-section">
+      <div class="explanation-title">Detailed Analysis</div>
+      <div class="explanation-text" id="explanationText"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_KEY = "YOUR_API_KEY_HERE";
+
+function getColor(score) {
+  if (score <= 40) return 'green';
+  if (score <= 70) return 'yellow';
+  return 'red';
+}
+
+function hallucColor(risk) {
+  if (risk === 'low') return 'green';
+  if (risk === 'medium') return 'yellow';
+  return 'red';
+}
+
+function likelihoodLabel(score) {
+  if (score <= 20) return 'Very Likely Human';
+  if (score <= 40) return 'Probably Human';
+  if (score <= 60) return 'Uncertain';
+  if (score <= 80) return 'Probably AI';
+  return 'Very Likely AI';
+}
+
+function likelihoodColor(score) {
+  if (score <= 40) return 'var(--green)';
+  if (score <= 65) return 'var(--yellow)';
+  return 'var(--red)';
+}
+
+async function analyze() {
+  const apiKey = document.getElementById('apiKey').value.trim() || API_KEY;
+  const assignment = document.getElementById('prompt').value.trim();
+  const student = document.getElementById('response').value.trim();
+
+  const errorEl = document.getElementById('errorMsg');
+  errorEl.style.display = 'none';
+
+  if (!assignment || !student) {
+    errorEl.textContent = 'Both fields are required.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  if (apiKey === 'YOUR_API_KEY_HERE' || !apiKey) {
+    errorEl.textContent = 'Please enter your Gemini API key.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('analyzeBtn');
+  const spinner = document.getElementById('spinner');
+  const btnText = document.getElementById('btnText');
+
+  btn.disabled = true;
+  spinner.style.display = 'block';
+  btnText.textContent = 'Analyzing…';
+  document.getElementById('results').style.display = 'none';
+
+  const systemPrompt = `You are an expert AI detection and academic integrity analyst. Analyze the given student response against the assignment prompt.
+
+You must return ONLY a valid JSON object with no markdown, no code fences, no explanation outside the JSON. Return exactly this structure:
+{
+  "ai_score": <number 0-100, likelihood this was AI-generated>,
+  "hallucination_risk": <"low" | "medium" | "high">,
+  "instruction_following": <number 0-100, how well the response follows the assignment>,
+  "generic_score": <number 0-100, how generic and non-specific the writing is>,
+  "ai_likelihood": <number 0-100, overall AI likelihood combining all signals>,
+  "flags": [<list of strings describing specific AI-like traits or issues found>],
+  "explanation": "<2-3 sentence summary of key findings and reasoning>"
+}
+
+Keep the explanation under 100 words. Evaluate: hallucinations or fabricated facts, alignment with assignment, generic vs specific writing, AI-like sentence structures, unusual uniformity in tone, lack of personal voice, suspiciously perfect grammar, over-hedging language, absence of errors a real student would make, and reliance on common AI phrasing patterns.`;
+
+  const userMessage = `ASSIGNMENT PROMPT:\n${assignment}\n\nSTUDENT RESPONSE:\n${student}`;
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: systemPrompt + '\n\n' + userMessage }] }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 4000 }
+        })
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API error ${res.status}`);
+    }
+
+    const data = await res.json();
+    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const cleaned = raw.replace(/```json|```/gi, '').trim();
+    const start = cleaned.indexOf('{');
+    const end = cleaned.lastIndexOf('}');
+    if (start === -1 || end === -1) throw new Error('No JSON object found in response.');
+    const parsed = JSON.parse(cleaned.slice(start, end + 1));
+
+    renderResults(parsed);
+  } catch (e) {
+    errorEl.textContent = 'Error: ' + (e.message || 'Something went wrong.');
+    errorEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    spinner.style.display = 'none';
+    btnText.textContent = 'Analyze Response';
+  }
+}
+
+function renderResults(d) {
+  const aiScore = d.ai_score ?? 0;
+  const instrScore = d.instruction_following ?? 0;
+  const genericScore = d.generic_score ?? 0;
+  const likelihoodScore = d.ai_likelihood ?? 0;
+  const halluc = d.hallucination_risk ?? 'low';
+
+  const likelihoodNum = document.getElementById('likelihoodNum');
+  likelihoodNum.textContent = likelihoodScore;
+  likelihoodNum.style.color = likelihoodColor(likelihoodScore);
+
+  const lLabel = document.getElementById('likelihoodLabel');
+  lLabel.textContent = likelihoodLabel(likelihoodScore);
+  lLabel.style.color = likelihoodColor(likelihoodScore);
+
+  const meter = document.getElementById('likelihoodMeter');
+  meter.style.width = likelihoodScore + '%';
+  meter.style.background = likelihoodColor(likelihoodScore);
+
+  setCard('card-ai', 'val-ai', aiScore, aiScore);
+  setCard('card-instr', 'val-instr', instrScore, 100 - instrScore);
+  setCard('card-generic', 'val-generic', genericScore, genericScore);
+
+  const hallucCard = document.getElementById('card-halluc');
+  const hallucVal = document.getElementById('val-halluc');
+  const hc = hallucColor(halluc);
+  hallucCard.className = 'score-card ' + hc;
+  hallucVal.className = 'score-value badge ' + hc;
+  hallucVal.textContent = halluc;
+
+  const flagsList = document.getElementById('flagsList');
+  flagsList.innerHTML = '';
+  const flags = Array.isArray(d.flags) ? d.flags : [];
+  if (flags.length === 0) {
+    flagsList.innerHTML = '<div class="flag-item"><div class="flag-dot" style="background:var(--green)"></div>No significant issues detected.</div>';
+  } else {
+    flags.forEach(f => {
+      const el = document.createElement('div');
+      el.className = 'flag-item';
+      el.innerHTML = `<div class="flag-dot"></div><span>${f}</span>`;
+      flagsList.appendChild(el);
+    });
+  }
+
+  document.getElementById('explanationText').textContent = d.explanation || 'No explanation provided.';
+
+  const results = document.getElementById('results');
+  results.style.display = 'block';
+  results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function setCard(cardId, valId, displayVal, riskVal) {
+  const color = getColor(riskVal);
+  const card = document.getElementById(cardId);
+  const val = document.getElementById(valId);
+  card.className = 'score-card ' + color;
+  val.className = 'score-value ' + color;
+  val.textContent = displayVal;
+}
+</script>
+</body>
+</html>
