@@ -514,7 +514,7 @@
     animation: fadeUp 0.3s ease both;
   }
 
-  .emdash-warning.visible { display: flex; }
+  .emdash-warning.visible { display: flex !important; }
 
   .emdash-warning-icon {
     font-size: 16px;
@@ -712,10 +712,10 @@ let optionalOpen = false;
 
 function checkEmDash() {
   const promptText = document.getElementById('prompt').value;
-  const matches = promptText.match(/—/g);
+  const matches = (promptText.match(/—/g) || []);
   const warning = document.getElementById('emdashWarning');
   const countEl = document.getElementById('emdashCount');
-  if (matches && matches.length > 0) {
+  if (matches.length > 0) {
     countEl.textContent = matches.length + (matches.length === 1 ? ' found' : ' found');
     warning.classList.add('visible');
   } else {
@@ -725,10 +725,10 @@ function checkEmDash() {
 
 function checkExemplarEmDash() {
   const exemplarText = document.getElementById('exemplar').value;
-  const matches = exemplarText.match(/—/g);
+  const matches = (exemplarText.match(/—/g) || []);
   const warning = document.getElementById('exemplarEmdashWarning');
   const countEl = document.getElementById('exemplarEmdashCount');
-  if (matches && matches.length > 0) {
+  if (matches.length > 0) {
     countEl.textContent = matches.length + (matches.length === 1 ? ' found' : ' found');
     warning.classList.add('visible');
   } else {
@@ -739,6 +739,8 @@ function checkExemplarEmDash() {
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('prompt').addEventListener('input', checkEmDash);
   document.getElementById('exemplar').addEventListener('input', checkExemplarEmDash);
+  checkEmDash();
+  checkExemplarEmDash();
 });
 
 
