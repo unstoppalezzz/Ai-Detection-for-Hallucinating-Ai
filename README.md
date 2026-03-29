@@ -1,6 +1,6 @@
 # AI Detection Tool for Student Submissions
 
-This tool uses Google's Gemini AI to analyze student responses for signs of AI generation. It evaluates multiple signals simultaneously not just hallucinations including writing style, tone uniformity, instruction-following, and AI-typical phrasing patterns.
+This tool uses Google's Gemini AI to analyze student responses for signs of AI generation. It evaluates multiple signals simultaneously including writing style, tone uniformity, instruction-following, and AI-typical phrasing patterns.
 
 ---
 
@@ -8,10 +8,9 @@ This tool uses Google's Gemini AI to analyze student responses for signs of AI g
 
 ### 1. Get a free Gemini API key
 
-- Go to [https://console.cloud.google.com/apis/dashboard](https://console.cloud.google.com/apis/dashboard)
+- Go to [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
 - Sign in with a Google account
-- Navigate to **"Credentials"** and click **"Create credential"**, then select **"API key"**
-- Use the default settings and copy your key when it appears
+- Click **"Create API key"**
 - Save your key somewhere safe — no credit card required
 
 ### 2. Add your key to the tool
@@ -26,30 +25,32 @@ This tool uses Google's Gemini AI to analyze student responses for signs of AI g
 - Optionally expand **"Add optional context"** to include:
   - Extra notes (e.g. class year, timed conditions, topic)
   - An exemplar genuine human response for better calibration
+  - **A student baseline** (a confirmed human-written sample from the same student)
 - Click **"Analyze Response"**
 
 ---
 
 ## What the Tool Checks
 
-Each analysis produces four scored metrics and a list of flagged issues:
+Each analysis produces five scored metrics (worth 20 points each) and a list of flagged issues:
 
 | Metric | What it measures |
 |---|---|
-| **AI Detection Score** | Overall likelihood the response was AI-written (0–100) |
-| **Hallucination Risk** | Whether the response contains fabricated or unverifiable facts (Low / Medium / High) |
-| **Instruction Following** | How well the response actually addresses the assignment (0–100) |
-| **Generic Writing Score** | How vague, non-specific, or template-like the writing is (0–100) |
+| **AI-like Patterns** | Formulaic transitions and "machine-perfect" grammar (0–20) |
+| **Hallucination Risk** | Fabricated facts or claims that contradict the prompt (0–20) |
+| **Instruction Mismatch** | Failure to follow specific constraints or "over-optimizing" instructions (0–20) |
+| **Generic Writing** | Use of clichés and vague language that lacks original insight (0–20) |
+| **Style Difference** | Delta between this work and the student’s known baseline voice (0–20) |
 
-The tool also provides an **overall AI likelihood meter** combining all signals, plus a **"Detected Issues"** list of specific red flags found in the text.
+The tool provides an **overall AI likelihood score** (0–100), plus a **"Detected Issues"** list of specific red flags.
 
 ### Signals the tool looks for
 
 - Hallucinated or unverifiable facts
 - Suspiciously perfect grammar and uniformity of tone
-- Lack of personal voice or student-typical errors
+- **Significant shifts in writing style** (when a baseline is provided)
 - Over-hedging language and AI-typical phrasing patterns
-- Unusually high use of em dashes (—), a common AI stylistic marker
+- Unusually high use of em dashes (—), a common AI stylistic marker(em dashes are not in the us keyboard layout)
 - Generic, non-specific writing that could apply to any assignment
 - Poor alignment with the specific assignment prompt
 
@@ -60,7 +61,9 @@ The tool also provides an **overall AI likelihood meter** combining all signals,
 ## Tips for Better Results
 
 - **Provide extra context** — noting the student's year, whether it was timed, or the topic helps the model calibrate its expectations.
-- **Add an exemplar** — pasting in a confirmed human response for the same assignment gives the model a baseline to compare against, improving accuracy noticeably.
+- **Add an exemplar** — providing a "Gold Standard" response helps the engine understand the expected academic level.
+- **Include a Student Baseline** — providing a confirmed human sample from the student allows the engine to detect shifts in rhythm and vocabulary.
+- **Export Reports** — Use the "Download Full Report PDF" button to save a timestamped audit of the analysis.
 
 ---
 
