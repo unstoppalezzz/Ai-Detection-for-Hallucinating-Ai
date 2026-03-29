@@ -1022,9 +1022,26 @@ async function analyze() {
   document.getElementById('results').style.display = 'none';
 
   let optionalBlocks = '';
-  if (extraContext) optionalBlocks += `\n\nEXTRA CONTEXT:\n${extraContext}`;
-  if (exemplar) optionalBlocks += `\n\nEXEMPLAR:\n${exemplar}`;
-  if (studentBaseline) optionalBlocks += `\n\nBASELINE:\n${studentBaseline}`;
+  if (extraContext) optionalBlocks += `\n\nEXTRA CONTEXT (Calibration & Constraints):`;
+  optionalBlocks += `\n  The following contextual information describes the assignment conditions, classroom environment, and expectations.`;
+  optionalBlocks += `\n  Use this to calibrate your analysis of the student response. Consider factors such as time pressure, allowed resources, grade level, and subject-specific conventions.`;
+  optionalBlocks += `\n  Do NOT treat missing elements (e.g., citations, depth, structure) as AI indicators if they are consistent with this context.`;
+  optionalBlocks += `\n  Adjust expectations for writing quality, detail, and accuracy based on this information.`;
+  optionalBlocks += `\n  Context:`;
+  optionalBlocks += `\n  ${extraContext}`;
+  if (exemplar) optionalBlocks += `\n\nEXEMPLAR GENUINE HUMAN STUDENT RESPONSE (for calibration):\nThe following is a confirmed human-written student response for this same assignment. Use it as a benchmark to understand the expected writing level, voice, structure, and style of a real student in this class. Compare the submission against this exemplar when assessing naturalness and authenticity.\n${exemplar}`;
+  if (studentBaseline) optionalBlocks += `\n\nCONFIRMED HUMAN BASELINE (Same Student Writing Profile):`;
+  optionalBlocks += `\n  The following is a verified human-written response from the SAME student.`;
+  optionalBlocks += `\n  Use this as a stylistic fingerprint to compare against the current submission.`;
+  optionalBlocks += `\n  Analyze differences in:`;
+  optionalBlocks += `\n  - Sentence structure and rhythm`;
+  optionalBlocks += `\n  - Vocabulary range and word choice`;
+  optionalBlocks += `\n  - Grammar consistency and error patterns`;
+  optionalBlocks += `\n  - Punctuation habits (including overuse of em dashes, commas, etc.)`;
+  optionalBlocks += `\n  - Overall voice, tone, and fluency`;
+  optionalBlocks += `\n  Significant deviation from this baseline may indicate AI assistance, while strong alignment suggests authentic authorship.`;
+  optionalBlocks += `\n  Baseline Response:`;
+  optionalBlocks += `\n  ${studentBaseline}`;
 
   const systemPrompt = `You are an expert in detecting AI-generated writing and academic integrity analysis. Carefully analyze the student response below using the assignment prompt and any provided context.
 
