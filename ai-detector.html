@@ -906,8 +906,47 @@
     </div>
 
   </div>
+  
 </div>
+<div id="manualModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; align-items:center; justify-content:center; padding:20px; backdrop-filter: blur(4px);">
+  <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); width:100%; max-width:650px; padding:32px; position:relative; box-shadow: 0 20px 50px rgba(0,0,0,0.5); max-height: 95vh; overflow-y: auto;">
+    <button onclick="closeManualModal()" style="position:absolute; top:16px; right:16px; background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:24px; line-height:1;">&times;</button>
+    <div class="eyebrow" style="margin-bottom:8px; color:var(--accent);">DuckDuckGo AI Fallback</div>
+    <h2 style="font-size:24px; margin-bottom:12px; font-family:'Syne', sans-serif;">External Analysis Required</h2>
+    <p style="color:var(--text-dim); font-size:14px; line-height:1.6; margin-bottom:24px; font-family:'Syne', sans-serif;">
+      You haven't provided a Gemini API key. Use the prompt below with an external AI to get your results:
+      <br><br>
+      1. The analysis prompt has been <strong>copied to your clipboard</strong>.<br>
+      2. Open an AI chat (like DuckDuckGo) in a new tab.<br>
+      3. Select A Reasoning Model <br>
+      4. Paste the prompt and wait for the JSON response.<br>
+      5. Copy the JSON result and paste it into the box below.
+    </p>
+    
 
+    <div class="field" style="margin-bottom:16px;">
+      <div class="field-label">1. Copy Analysis Prompt</div>
+      <textarea id="manualPromptDisplay" style="height:80px; font-size:11px; opacity:0.8; background:var(--bg);" readonly></textarea>
+      <button class="analyze-btn" style="padding:10px; font-size:12px; margin-top:8px; background:var(--surface2); color:var(--text); border:1px solid var(--border); margin-bottom: 0;" onclick="copyManualPrompt()">Copy to Clipboard</button>
+    </div>
+
+    <div style="margin-bottom:24px;">
+      <div class="field-label" style="margin-bottom:8px;">2. Run in Duck.ai</div>
+      <a href="https://duckduckgo.com/aichat" target="_blank" class="analyze-btn" style="text-decoration:none; display:flex; background:var(--accent); color:#000; margin-bottom: 0;">
+        Open DuckDuckGo AI Chat
+      </a>
+    </div>
+
+    <div class="field" style="margin-bottom:20px;">
+      <div class="field-label">3. Paste JSON Result From AI</div>
+      <textarea id="manualJsonInput" style="height:120px; border: 1px solid var(--border);" placeholder='{"ai_pattern_score": ...}'></textarea>
+    </div>
+
+    <button class="analyze-btn" style="margin-bottom:0;" onclick="processManualJSON()">
+      Process Results
+    </button>
+  </div>
+</div>
 <script>
 const API_KEY = "YOUR_API_KEY_HERE";
 let optionalOpen = false;
@@ -955,6 +994,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('prompt').addEventListener('input', checkEmDash);
   document.getElementById('exemplar').addEventListener('input', checkExemplarEmDash);
   document.getElementById('studentBaseline').addEventListener('input', checkBaselineEmDash);
+  document.getElementById('manualJsonInput').addEventListener('input', () => processManualJSON(true));
 });
 
 function toggleOptional() {
@@ -1006,12 +1046,6 @@ async function analyze() {
     errorEl.style.display = 'block';
     return;
   }
-  if (apiKey === 'YOUR_API_KEY_HERE' || !apiKey) {
-    errorEl.textContent = 'Please enter your Gemini API key.';
-    errorEl.style.display = 'block';
-    return;
-  }
-
   const btn = document.getElementById('analyzeBtn');
   const spinner = document.getElementById('spinner');
   const btnText = document.getElementById('btnText');
@@ -1081,6 +1115,30 @@ Also consider: hallucinations, instruction alignment, style shifts, and the pres
 
 
   const userMessage = `ASSIGNMENT:\n${assignment}\n\nSTUDENT:\n${student}${optionalBlocks}`;
+
+  if (apiKey === 'YOUR_API_KEY_HERE' || !apiKey) {
+    const fullPrompt = systemPrompt + '\n\n' + userMessage;
+    
+    document.getElementById('manualPromptDisplay').value = fullPrompt;
+
+    try {
+      await navigator.clipboard.writeText(fullPrompt);
+    } catch (err) {
+      console.warn('Auto-copy failed, user can use the manual button.');
+    }
+    
+    const modal = document.getElementById('manualModal');
+    if (modal) {
+      modal.style.display = 'flex';
+    } else {
+      alert("Error: manualModal element not found in HTML. Please check your file structure.");
+    }
+
+    btn.disabled = false;
+    spinner.style.display = 'none';
+    btnText.textContent = 'Analyze Response';
+    return;
+  }
 
   try {
     const res = await fetch(
@@ -1267,6 +1325,49 @@ function generatePDF() {
   };
 
   html2pdf().set(opt).from(element).save();
+}
+
+function closeManualModal() {
+  document.getElementById('manualModal').style.display = 'none';
+  document.getElementById('manualJsonInput').value = '';
+}
+
+function processManualJSON(silent = false) {
+  const input = document.getElementById('manualJsonInput').value.trim();
+  const extraContext = document.getElementById('extraContext').value.trim();
+  const exemplar = document.getElementById('exemplar').value.trim();
+  const studentBaseline = document.getElementById('studentBaseline').value.trim();
+
+  if (!input) {
+    if (!silent) alert("Please paste the JSON response from the AI first.");
+    return;
+  }
+
+  try {
+    const start = input.indexOf('{');
+    const end = input.lastIndexOf('}');
+    if (start === -1 || end === -1) throw new Error('Invalid JSON format.');
+    const data = JSON.parse(input.slice(start, end + 1));
+    
+    closeManualModal();
+    renderResults(data, {
+      usedBaseline: !!studentBaseline,
+      usedOptional: !!(extraContext || exemplar || studentBaseline)
+    });
+  } catch (e) {
+    if (!silent) alert("Error parsing JSON. Please make sure you copied the entire JSON block (everything between { and }) from the AI's response.");
+    console.error(e);
+  }
+}
+
+async function copyManualPrompt() {
+  const text = document.getElementById('manualPromptDisplay').value;
+  try {
+    await navigator.clipboard.writeText(text);
+    alert("Prompt copied to clipboard!");
+  } catch (err) {
+    alert("Failed to copy. Please select the text in the box and press Ctrl+C.");
+  }
 }
 </script>
 </body>
